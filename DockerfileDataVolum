@@ -1,0 +1,6 @@
+FROM alpine
+COPY shopServer /root/shopServer
+
+VOLUME /root/shopServer
+
+CMD ["/bin/bash"]

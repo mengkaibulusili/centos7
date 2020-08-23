@@ -1,0 +1,4 @@
+172.17.0.1 - - [23/Aug/2020:06:18:03 +0000] "GET / HTTP/1.1" 200 2274 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36"
+172.17.0.1 - - [23/Aug/2020:06:18:04 +0000] "GET /manifest.json HTTP/1.1" 404 2784 "http://localhost:15000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36"
+172.17.0.1 - - [23/Aug/2020:06:23:26 +0000] "GET / HTTP/1.1" 200 2274 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36"
+172.17.0.1 - - [23/Aug/2020:06:23:26 +0000] "GET /manifest.json HTTP/1.1" 404 2784 "http://localhost:15000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.135 Safari/537.36"

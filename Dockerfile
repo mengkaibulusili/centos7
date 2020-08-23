@@ -1,15 +1,23 @@
 FROM scratch
 ADD centos-7-x86_64-docker.tar.xz /
 
+ENV LANG  zh_CN.UTF-8
+
+RUN yum -y install openssl-devel bzip2-devel expat-devel gdbm-devel readline-devel sqlite-devel && \
+  yum -y install gcc automake autoconf libtool make wget
+
+
+VOLUME [ "/root/server" ]
+
 LABEL \
-    org.label-schema.schema-version="1.0" \
-    org.label-schema.name="CentOS Base Image" \
-    org.label-schema.vendor="CentOS" \
-    org.label-schema.license="GPLv2" \
-    org.label-schema.build-date="20200809" \
-    org.opencontainers.image.title="CentOS Base Image" \
-    org.opencontainers.image.vendor="CentOS" \
-    org.opencontainers.image.licenses="GPL-2.0-only" \
-    org.opencontainers.image.created="2020-08-09 00:00:00+01:00"
+  org.label-schema.schema-version="1.0" \
+  org.label-schema.name="CentOS Base Image" \
+  org.label-schema.vendor="CentOS" \
+  org.label-schema.license="GPLv2" \
+  org.label-schema.build-date="20200809" \
+  org.opencontainers.image.title="CentOS Base Image" \
+  org.opencontainers.image.vendor="CentOS" \
+  org.opencontainers.image.licenses="GPL-2.0-only" \
+  org.opencontainers.image.created="2020-08-09 00:00:00+01:00"
 
 CMD ["/bin/bash"]

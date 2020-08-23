@@ -1,0 +1,102 @@
+FROM scratch
+
+ADD centos-7-x86_64-docker.tar.xz /
+
+COPY  nginx.repo /etc/yum.repos.d/nginx.repo 
+COPY  get-pip.py /usr/local/python36/get-pip.py
+COPY  sqlite-autoconf-3330000.tar.gz  /root/sqlite-autoconf-3330000.tar.gz
+
+ENV   GPG_KEY 0D96DF4D4110E5C43FBFB17F2D347EA6AA65421D
+ENV   PYTHON_VERSION 3.6.12
+
+# if this is called "PIP_VERSION", pip explodes with "ValueError: invalid truth value '<VERSION>'"
+ENV PYTHON_PIP_VERSION 20.2.2
+# https://github.com/pypa/get-pip
+ENV PYTHON_GET_PIP_URL https://github.com/pypa/get-pip/raw/5578af97f8b2b466f4cdbebe18a3ba2d48ad1434/get-pip.py
+ENV PYTHON_GET_PIP_SHA256 d4d62a0850fe0c2e6325b2cc20d818c580563de5a2038f917e3cb0e25280b4d1
+
+RUN  export http_proxy="http://192.168.1.6:7890/" \
+  && export https_proxy="http://192.168.1.6:7890/" \
+  && sed -i "s/#baseurl/baseurl/g" /etc/yum.repos.d/CentOS-Base.repo \
+  && sed -i "s/mirrorlist=http/#mirrorlist=http/g" /etc/yum.repos.d/CentOS-Base.repo \
+  && sed -i "s@http://mirror.centos.org@https://mirrors.huaweicloud.com@g" /etc/yum.repos.d/CentOS-Base.repo \
+  && yum clean all \
+  && yum makecache \
+  && yum -y install openssl-devel bzip2-devel expat-devel gdbm-devel readline-devel sqlite-devel  \
+  && yum -y install gcc automake autoconf libtool make wget \
+  && yum -y install kde-l10n-Chinese telnet  \
+  && yum -y install glibc-common \
+  && yum clean all \
+  && localedef -c -f UTF-8 -i zh_CN zh_CN.utf8   \
+  && echo -e 'export LANG="zh_CN.UTF-8"\nexport LC_ALL="zh_CN.UTF-8"' > /etc/locale.conf \
+  && source /etc/locale.conf \
+  && cd /root \
+  && tar -xf sqlite-autoconf-3330000.tar.gz \
+  && cd sqlite-autoconf-3330000 \
+  &&  ./configure  \
+  && make && make install \
+  && cd /root \
+  && rm -rf /root/sqlite-autoconf-3330000* \
+  && set -ex \
+	&& wget -O python.tar.xz "https://mirrors.huaweicloud.com/python/${PYTHON_VERSION%%[a-z]*}/Python-$PYTHON_VERSION.tar.xz" \
+	&& wget -O python.tar.xz.asc "https://mirrors.huaweicloud.com/python/${PYTHON_VERSION%%[a-z]*}/Python-$PYTHON_VERSION.tar.xz.asc" \
+	&& export GNUPGHOME="$(mktemp -d)" \
+	&& { command -v gpgconf > /dev/null && gpgconf --kill all || :; } \
+	&& rm -rf "$GNUPGHOME" python.tar.xz.asc \
+	&& mkdir -p /usr/src/python \
+	&& tar -xJC /usr/src/python --strip-components=1 -f python.tar.xz \
+	&& rm python.tar.xz \
+	\
+	&& cd /usr/src/python \
+	&& LD_RUN_PATH=/usr/local/lib ./configure \
+    --prefix=/usr/local/python36 \
+		--enable-loadable-sqlite-extensions \
+		--enable-optimizations \
+		--enable-option-checking=fatal \
+		--enable-shared \
+		--with-system-expat \
+		--with-system-ffi \
+		--without-ensurepip \
+	&& LD_RUN_PATH=/usr/local/lib make -j "$(nproc)" \
+# setting PROFILE_TASK makes "--enable-optimizations" reasonable: https://bugs.python.org/issue36044 / https://github.com/docker-library/python/issues/160#issuecomment-509426916
+      PROFILE_TASK='-m test.regrtest --pgo \
+			test_array \
+			test_base64 \
+			test_binascii \
+		' \
+	&& LD_RUN_PATH=/usr/local/lib make install \
+  && cd /usr/local/python36 \
+	&& rm -rf /usr/src/python \
+  && ln -s /usr/local/python36/lib/libpython3.6m.so.1.0 /usr/lib/libpython3.6m.so.1.0  \
+	&& ldconfig \
+	&& ln -s /usr/local/python36/bin/idle3 /usr/bin/idle3 \
+	&& ln -s /usr/local/python36/bin/pydoc3 /usr/bin/pydoc3 \
+	&& ln -s /usr/local/python36/bin/python3 /usr/bin/python3 \
+	&& ln -s /usr/local/python36/bin/python3-config /usr/bin/python3-config \
+  && /usr/bin/python3 --version \
+	&& /usr/bin/python3 get-pip.py \
+		--disable-pip-version-check \
+		--no-cache-dir \
+		"pip==$PYTHON_PIP_VERSION" \
+	&& rm -f get-pip.py \
+  && ln -s /usr/local/python36/bin/pip3 /usr/bin/pip3 \
+  && /usr/bin/pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple \
+  && yum-config-manager --enable nginx-stable \
+  && yum install nginx -y \
+  && echo 'export PATH=/usr/local/python36/bin:$PATH' >> /root/.bashrc \
+  && /usr/bin/pip3 install uwsgi  
+
+LABEL \
+  org.label-schema.schema-version="1.0" \
+  org.label-schema.name="CentOS Base Image" \
+  org.label-schema.vendor="CentOS" \
+  org.label-schema.license="GPLv2" \
+  org.label-schema.build-date="20200809" \
+  org.opencontainers.image.title="CentOS Base Image" \
+  org.opencontainers.image.vendor="CentOS" \
+  org.opencontainers.image.licenses="GPL-2.0-only" \
+  org.opencontainers.image.created="2020-08-09 00:00:00+01:00"
+
+ENV LC_ALL  zh_CN.UTF-8
+ENV LANG    zh_CN.UTF-8
+CMD ["init"]
